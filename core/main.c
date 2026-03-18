@@ -7,6 +7,7 @@
 #include "encoder.h"
 #include "generated_config.h"
 #include "keycodes.h"
+#include "oled.h"
 
 #define MAX_LAYERS 4
 
@@ -14,9 +15,53 @@
 extern uint8_t keymap[MAX_LAYERS][MATRIX_ROWS][MATRIX_COLS];
 extern uint8_t encoder_map[MAX_LAYERS][ENCODER_COUNT][3];
 
-// --- CALLBACKS (Required for linking) ---
-uint16_t tud_hid_get_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_t report_type, uint8_t* buffer, uint16_t reqlen) { return 0; }
-void tud_hid_set_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_t report_type, uint8_t const* buffer, uint16_t bufsize) {}
+// Buffer for outgoing WebHID data
+uint8_t report_buffer[32];
+
+// --- BURST MODE STATE MACHINE ---
+typedef enum {
+    BURST_IDLE,
+    BURST_SEND_START,
+    BURST_SEND_CHUNKS,
+    BURST_SEND_END
+} burst_state_t;
+
+burst_state_t current_burst_state = BURST_IDLE;
+uint8_t current_layout_offset = 0;
+
+// WebHID flags
+bool has_metadata_response = false;
+
+// --- TINYUSB CALLBACKS ---
+
+uint16_t tud_hid_get_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_t report_type, uint8_t* buffer, uint16_t reqlen) {
+    if (instance == 0) {
+        memset(buffer, 0, 8);
+        return 8;
+    }
+    if (instance == 1) {
+        memset(buffer, 0, 32);
+        return 32;
+    }
+    return 0;
+}
+
+void tud_hid_set_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_t report_type, uint8_t const* buffer, uint16_t bufsize) {
+    if (instance != 1 || bufsize < 1) return;
+
+    uint8_t command = buffer[0];
+
+    if (command == 0x00) {
+        // Dummy packet for Linux toggle sync. Do nothing.
+    }
+    else if (command == 0x01) {
+        has_metadata_response = true;
+    }
+    else if (command == 0x02) {
+        current_burst_state = BURST_SEND_START;
+        current_layout_offset = 0;
+    }
+}
 
 // --- HARDWARE AND MATRIX LOGIC ---
 
@@ -123,6 +168,10 @@ int main()
     matrix_init();
     tusb_init();
 
+#if ENABLE_OLED
+    oled_init_wrapper();
+#endif
+
 #if ENCODER_COUNT > 0
     encoder_init();
     struct repeating_timer timer;
@@ -136,12 +185,67 @@ int main()
     // Crucial for preventing USB traffic jams on the typing interface.
     bool previous_report_had_keys = false;
 
+#if LAYOUT_ITEM_COUNT > 0
+    uint8_t layout_data[] = PHYSICAL_LAYOUT_DATA;
+    uint16_t total_layout_bytes = sizeof(layout_data);
+#else
+    uint16_t total_layout_bytes = 0;
+#endif
+
     while (true) {
         tud_task();
         matrix_scan();
 
+        // --- 1. WEBHID CONFIGURATOR LOGIC (Interface 1) ---
+        if (tud_hid_n_ready(1)) {
+
+            if (has_metadata_response) {
+                memset(report_buffer, 0, sizeof(report_buffer));
+                report_buffer[0] = 0x01;
+                report_buffer[1] = MATRIX_ROWS;
+                report_buffer[2] = MATRIX_COLS;
+                report_buffer[3] = MAX_LAYERS;
+                tud_hid_n_report(1, 0, report_buffer, 32);
+                has_metadata_response = false;
+            }
+            else if (current_burst_state == BURST_SEND_START) {
+                memset(report_buffer, 0, sizeof(report_buffer));
+                report_buffer[0] = 0x12;
+                report_buffer[1] = total_layout_bytes / 5;
+                tud_hid_n_report(1, 0, report_buffer, 32);
+                current_burst_state = BURST_SEND_CHUNKS;
+            }
+            else if (current_burst_state == BURST_SEND_CHUNKS) {
+                memset(report_buffer, 0, sizeof(report_buffer));
+                report_buffer[0] = 0x02;
+                report_buffer[1] = current_layout_offset;
+
+#if LAYOUT_ITEM_COUNT > 0
+                for(int i = 0; i < 30 && (current_layout_offset + i) < total_layout_bytes; i++) {
+                    report_buffer[i+2] = layout_data[current_layout_offset + i];
+                }
+#endif
+
+                tud_hid_n_report(1, 0, report_buffer, 32);
+                current_layout_offset += 30;
+
+                if (current_layout_offset >= total_layout_bytes) {
+                    current_burst_state = BURST_SEND_END;
+                }
+            }
+            else if (current_burst_state == BURST_SEND_END) {
+                memset(report_buffer, 0, sizeof(report_buffer));
+                report_buffer[0] = 0x22;
+                tud_hid_n_report(1, 0, report_buffer, 32);
+                current_burst_state = BURST_IDLE;
+            }
+        }
+
+        // --- 2. STANDARD KEYBOARD LOGIC (Interface 0) ---
+        bool any_key_pressed = false;
+
+        // Default interface is 0 for the standard keyboard
         if (tud_hid_ready()) {
-            bool any_key_pressed = false;
             uint8_t keycode[6] = {0};
             uint8_t modifier = 0;
             int count = 0;
@@ -160,6 +264,11 @@ int main()
 
             previous_report_had_keys = current_report_has_keys;
         }
+
+#if ENABLE_OLED
+        oled_task(current_layer, any_key_pressed);
+#endif
+
     }
     return 0;
 }

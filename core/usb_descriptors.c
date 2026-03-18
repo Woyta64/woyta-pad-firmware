@@ -1,6 +1,18 @@
 #include "tusb.h"
 #include "generated_config.h"
 
+// --- ENUMERATE INTERFACES ---
+enum {
+    ITF_NUM_KEYBOARD = 0,
+    ITF_NUM_CUSTOM, // The WebHID interface
+    ITF_NUM_TOTAL
+};
+
+// --- ENUMERATE ENDPOINTS ---
+#define EPNUM_KEYBOARD   0x81 // IN pipe (Keyboard -> PC)
+#define EPNUM_CUSTOM     0x82 // IN pipe (Keyboard -> PC for WebHID)
+#define EPNUM_CUSTOM_OUT 0x02 // OUT pipe (PC -> Keyboard for WebHID)
+
 // --- 1. DEVICE DESCRIPTOR ---
 tusb_desc_device_t const desc_device = {
     .bLength            = sizeof(tusb_desc_device_t),
@@ -11,9 +23,9 @@ tusb_desc_device_t const desc_device = {
     .bDeviceProtocol    = 0x00,
     .bMaxPacketSize0    = CFG_TUD_ENDPOINT0_SIZE,
 
-    .idVendor           = 0xCAFE,
-    .idProduct          = 0x4242,
-    .bcdDevice          = 0x0100,
+    .idVendor           = USB_VID,
+    .idProduct          = USB_PID,
+    .bcdDevice          = USB_BCD,
 
     .iManufacturer      = 0x01,
     .iProduct           = 0x02,
@@ -26,25 +38,53 @@ uint8_t const * tud_descriptor_device_cb(void) {
     return (uint8_t const *) &desc_device;
 }
 
-// --- 2. HID REPORT DESCRIPTOR ---
+// --- 2. HID REPORT DESCRIPTORS ---
+
+// Interface 0: Standard Keyboard Report
 uint8_t const desc_hid_report[] = {
     TUD_HID_REPORT_DESC_KEYBOARD()
 };
 
+// Interface 1: Custom WebHID Report (Vendor Defined 0xFF60)
+// This establishes a 32-byte two-way communication channel
+uint8_t const desc_hid_custom_report[] = {
+    HID_USAGE_PAGE_N ( 0xFF60, 2 ),
+    HID_USAGE        ( 0x61 ),
+    HID_COLLECTION   ( HID_COLLECTION_APPLICATION ),
+        // Input report (Keyboard to PC)
+        HID_LOGICAL_MIN  ( 0x00 ),
+        HID_LOGICAL_MAX_N( 0x00FF, 2 ),
+        HID_REPORT_SIZE  ( 8 ),
+        HID_REPORT_COUNT ( 32 ),
+        HID_USAGE        ( 0x62 ),
+        HID_INPUT        ( HID_DATA | HID_VARIABLE | HID_ABSOLUTE ),
+        // Output report (PC to Keyboard)
+        HID_USAGE        ( 0x63 ),
+        HID_OUTPUT       ( HID_DATA | HID_VARIABLE | HID_ABSOLUTE | HID_NON_VOLATILE ),
+    HID_COLLECTION_END
+};
+
+// Route the correct descriptor based on the interface requested
 uint8_t const * tud_hid_descriptor_report_cb(uint8_t instance) {
-    (void) instance;
-    return desc_hid_report;
+    if (instance == ITF_NUM_KEYBOARD) return desc_hid_report;
+    if (instance == ITF_NUM_CUSTOM)   return desc_hid_custom_report;
+    return NULL;
 }
 
 // --- 3. CONFIGURATION DESCRIPTOR ---
-#define CONFIG_TOTAL_LEN  (TUD_CONFIG_DESC_LEN + TUD_HID_DESC_LEN)
+
+// The total length now includes the Config Header, the standard HID desc, and the IN/OUT HID desc
+#define CONFIG_TOTAL_LEN  (TUD_CONFIG_DESC_LEN + TUD_HID_DESC_LEN + TUD_HID_INOUT_DESC_LEN)
 
 uint8_t const desc_configuration[] = {
     // Config Header
-    TUD_CONFIG_DESCRIPTOR(1, 1, 0, CONFIG_TOTAL_LEN, 0x00, 100),
+    TUD_CONFIG_DESCRIPTOR(1, ITF_NUM_TOTAL, 0, CONFIG_TOTAL_LEN, 0x00, 100),
 
-    // Interface 0: Keyboard
-    TUD_HID_DESCRIPTOR(0, 0, HID_ITF_PROTOCOL_KEYBOARD, sizeof(desc_hid_report), 0x81, CFG_TUD_HID_EP_BUFSIZE, 10)
+    // Interface 0: Keyboard (wMaxPacketSize=8 matches the 8-byte HID keyboard report)
+    TUD_HID_DESCRIPTOR(ITF_NUM_KEYBOARD, 0, HID_ITF_PROTOCOL_KEYBOARD, sizeof(desc_hid_report), EPNUM_KEYBOARD, 8, 10),
+
+    // Interface 1: Custom WebHID
+    TUD_HID_INOUT_DESCRIPTOR(ITF_NUM_CUSTOM, 0, HID_ITF_PROTOCOL_NONE, sizeof(desc_hid_custom_report), EPNUM_CUSTOM, EPNUM_CUSTOM_OUT, 32, 10)
 };
 
 uint8_t const * tud_descriptor_configuration_cb(uint8_t index) {
@@ -55,8 +95,8 @@ uint8_t const * tud_descriptor_configuration_cb(uint8_t index) {
 // --- 4. STRINGS ---
 char const* string_desc_arr[] = {
     (const char[]) { 0x09, 0x04 }, // 0: English
-    "Woyta",                       // 1: Manufacturer
-    "Woyta Pad",                   // 2: Product
+    USB_MANUFACTURER,              // 1: Manufacturer
+    USB_PRODUCT,                   // 2: Product
     "123456",                      // 3: Serial
 };
 
