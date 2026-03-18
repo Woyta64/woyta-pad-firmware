@@ -100,10 +100,10 @@ if(IS_OLED_ON)
 
     # Add OLED files, Header, AND THE DRIVER SOURCE directly
     list(APPEND SOURCE_FILES
-            core/oled.c
+            core/oled.cpp
             ${GENERATED_ASSETS_HEADER}
             ${KEYBOARD_DIR}/assets.h
-            lib/pico-ssd1306/ssd1306.c  # <--- Driver Source added here
+            lib/pico-ssd1306/ssd1306.cpp  # <--- Driver Source added here
     )
 endif()
 

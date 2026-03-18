@@ -95,7 +95,7 @@ void oled_task(uint8_t layer, bool key_pressed) {
     // 4. Send to Display
     ssd1306_show(&disp);
 }
-c
+
 #else
 // Stubs for when OLED is disabled
 void oled_init_wrapper(void) {}
