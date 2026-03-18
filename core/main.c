@@ -1,14 +1,17 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "pico/stdlib.h"
 #include "tusb.h"
 #include "matrix.h"
 #include "encoder.h"
 #include "generated_config.h"
+#include "keycodes.h"
 
-// Import the keymap from keymap.c
-// We assume 4 layers max, but we only use [0] for now.
-extern const uint8_t keymap[4][MATRIX_ROWS][MATRIX_COLS];
+#define MAX_LAYERS 4
+
+// Import keymap from keymap.c
+extern uint8_t keymap[MAX_LAYERS][MATRIX_ROWS][MATRIX_COLS];
 
 // --- CALLBACKS (Required for linking) ---
 uint16_t tud_hid_get_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_t report_type, uint8_t* buffer, uint16_t reqlen) { return 0; }
@@ -21,70 +24,112 @@ bool timer_callback(struct repeating_timer *t) {
     return true;
 }
 
-// --- KEYBOARD TASK ---
-void hid_task(void) {
-    if (!tud_hid_ready()) return;
+// --- HARDWARE AND MATRIX LOGIC ---
 
-    // 1. Scan the hardware
-    matrix_scan();
+void process_layer_cycle(uint8_t *current_layer, bool *layer_key_was_pressed, bool *any_key_pressed) {
+    bool layer_key_is_pressed = false;
 
-    uint8_t keycode[6] = {0};
-    uint8_t count = 0;
-
-    // 2. Iterate over every switch
     for (int r = 0; r < MATRIX_ROWS; r++) {
         for (int c = 0; c < MATRIX_COLS; c++) {
-            // If physical switch is pressed...
             if (matrix_is_on(r, c)) {
-
-                // ... Look up what key that is on Layer 0
-                uint8_t code = keymap[0][r][c];
-
-                // If it's a valid key and we have room in the packet
-                if (code != 0 && count < 6) {
-                    keycode[count] = code;
-                    count++;
+                *any_key_pressed = true;
+                uint8_t code = keymap[*current_layer][r][c];
+                if (code == KC_TRNS) {
+                    code = keymap[0][r][c];
+                }
+                if (code == KC_LAY_NEXT) {
+                    layer_key_is_pressed = true;
                 }
             }
         }
     }
 
-    #if ENCODER_COUNT > 0
-        for (int i = 0; i < ENCODER_COUNT; i++) {
-            int32_t delta = encoder_get_delta(i);
+    if (layer_key_is_pressed && !(*layer_key_was_pressed)) {
+        (*current_layer)++;
+        if (*current_layer >= MAX_LAYERS) {
+            *current_layer = 0;
+        }
+    }
+    *layer_key_was_pressed = layer_key_is_pressed;
+}
 
-            // Simple Hardcoded Map for Test:
-            // Encoder 0: Volume Up/Down
-            if (i == 0) {
-                if (delta > 0) {
-                    // Send Consumer Control for Vol Up (Next Step)
-                    // For now, let's just type '+' to prove it works
-                    if (count < 6) keycode[count++] = 0x2E; // KC_EQUAL (+)
-                } else if (delta < 0) {
-                    if (count < 6) keycode[count++] = 0x2D; // KC_MINUS (-)
+void process_matrix_keys(uint8_t current_layer, uint8_t *keycode, uint8_t *modifier, int *count) {
+    for (int r = 0; r < MATRIX_ROWS; r++) {
+        for (int c = 0; c < MATRIX_COLS; c++) {
+            if (matrix_is_on(r, c)) {
+                uint8_t code = keymap[current_layer][r][c];
+                if (code == KC_TRNS) {
+                    code = keymap[0][r][c];
+                }
+
+                if (code == KC_LAY_NEXT) continue;
+
+                if (code >= 0xE0 && code <= 0xE7) {
+                    *modifier |= (1 << (code - 0xE0));
+                }
+                else if (code != 0 && *count < 6) {
+                    keycode[*count] = code;
+                    (*count)++;
                 }
             }
         }
-    #endif
-
-    // 3. Send the list of pressed keys to Windows
-    tud_hid_keyboard_report(0, 0, keycode);
+    }
 }
 
-int main() {
+// --- MAIN LOOP ---
+
+int main()
+{
     stdio_init_all();
-    matrix_init(); // Uses generated pins now
+    matrix_init();
     tusb_init();
 
-    #if ENCODER_COUNT > 0
-        encoder_init();
-        struct repeating_timer timer;
-        add_repeating_timer_us(-1000, timer_callback, NULL, &timer); // 1000us = 1ms
-    #endif
+#if ENCODER_COUNT > 0
+    encoder_init();
+    struct repeating_timer timer;
+    add_repeating_timer_us(-1000, timer_callback, NULL, &timer);
+#endif
+
+    uint8_t current_layer = 0;
+    bool layer_key_was_pressed = false;
+
+    // Tracks if the last USB report contained pressed keys.
+    // Crucial for preventing USB traffic jams on the typing interface.
+    bool previous_report_had_keys = false;
 
     while (true) {
         tud_task();
-        hid_task();
+        matrix_scan();
+
+        if (tud_hid_ready()) {
+            bool any_key_pressed = false;
+            uint8_t keycode[6] = {0};
+            uint8_t modifier = 0;
+            int count = 0;
+
+            process_layer_cycle(&current_layer, &layer_key_was_pressed, &any_key_pressed);
+            process_matrix_keys(current_layer, keycode, &modifier, &count);
+
+#if ENCODER_COUNT > 0
+            for (int i = 0; i < ENCODER_COUNT; i++) {
+                int32_t delta = encoder_get_delta(i);
+                if (i == 0 && delta != 0) {
+                    any_key_pressed = true;
+                    if (count < 6) keycode[count++] = (delta > 0) ? KC_EQUAL : KC_MINUS;
+                }
+            }
+#endif
+
+            bool current_report_has_keys = (count > 0 || modifier > 0);
+
+            // Only send data to the PC if a key is actively held down,
+            // OR if we just let go and need to send the final empty "key release" packet.
+            if (current_report_has_keys || previous_report_had_keys) {
+                tud_hid_keyboard_report(0, modifier, keycode);
+            }
+
+            previous_report_had_keys = current_report_has_keys;
+        }
     }
     return 0;
 }

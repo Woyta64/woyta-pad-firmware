@@ -1,5 +1,9 @@
 #pragma once
 
+// --- CUSTOM WOYTA-PAD KEYCODES ---
+#define KC_TRNS 0x00      // Transparent: Fall back to the key on Layer 0
+#define KC_LAY_NEXT 0xF4  // Cycle to next layer
+
 /**
  * Modifier masks - used for the first byte in the HID report.
  * NOTE: The second byte in the report is reserved, 0x00

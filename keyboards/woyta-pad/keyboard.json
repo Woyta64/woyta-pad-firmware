@@ -16,9 +16,20 @@
   "matrix": {
     "rows": 4,
     "cols": 5,
-    "row_pins": [8, 7, 6, 5],
-    "col_pins": [13, 12, 11, 10, 9],
-    "diode_direction": "ROW2COL"
+    "row_pins": [
+      8,
+      7,
+      6,
+      5
+    ],
+    "col_pins": [
+      13,
+      12,
+      11,
+      10,
+      9
+    ],
+    "diode_direction": "COL2ROW"
   },
   "encoders": {
     "enabled": true,

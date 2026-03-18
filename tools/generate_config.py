@@ -101,6 +101,33 @@ def generate_header(json_path, header_path):
         content.append("")
         content.append("#define ENABLE_OLED false")
 
+    physical_layout = data.get("physical_layout", [])
+    if physical_layout:
+        content.append("")
+        content.append("// --- Physical Layout Geometry ---")
+        content.append(f"#define LAYOUT_ITEM_COUNT {len(physical_layout)}")
+
+        layout_bytes = []
+        for item in physical_layout:
+            x = item.get("x", 0)
+            y = item.get("y", 0)
+            item_type = item.get("type", "key")
+
+            if item_type == "key":
+                matrix_coords = item.get("matrix", [0, 0])
+                # Format: Type (0=Key), X, Y, Matrix Row, Matrix Col
+                layout_bytes.extend([0, x, y, matrix_coords[0], matrix_coords[1]])
+            elif item_type == "encoder":
+                index = item.get("index", 0)
+                # Format: Type (1=Encoder), X, Y, Encoder Index, Padding (0)
+                layout_bytes.extend([1, x, y, index, 0])
+
+        # Format the byte array for C
+        byte_strings = [str(b) for b in layout_bytes]
+        content.append(f"#define PHYSICAL_LAYOUT_DATA {{ {', '.join(byte_strings)} }}")
+    else:
+        content.append("")
+        content.append("#define LAYOUT_ITEM_COUNT 0")
 
     content.append("")
 

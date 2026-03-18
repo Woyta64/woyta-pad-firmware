@@ -10,7 +10,16 @@ set(CMAKE_CXX_STANDARD 17)
 # Initialize the SDK
 pico_sdk_init()
 
-# --- 1. KEYBOARD SELECTION ---
+# --- 1. PYTHON DETECTION ---
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/venv/bin/python3")
+    message(STATUS "Using local virtual environment: venv/bin/python3")
+    set(PYTHON_EXEC "${CMAKE_CURRENT_SOURCE_DIR}/venv/bin/python3")
+else()
+    message(STATUS "Using system python")
+    set(PYTHON_EXEC "python3")
+endif()
+
+# --- 2. KEYBOARD SELECTION ---
 if(NOT DEFINED kb)
     set(kb "woyta-pad")
     message(STATUS "No keyboard specified, using default: ${kb}")
@@ -18,46 +27,46 @@ endif()
 
 set(KEYBOARD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/keyboards/${kb})
 message(STATUS "Building for keyboard: ${kb}")
-message(STATUS "Keyboard directory: ${KEYBOARD_DIR}")
 
-# --- 2. DEFINE PATHS ---
+# --- 3. DEFINE PATHS ---
 set(GENERATED_HEADERS_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 set(GENERATED_KEYBOARD_HEADER ${GENERATED_HEADERS_DIRECTORY}/generated_config.h)
 
-# --- 3. GENERATION COMMAND ---
+# --- 4. GENERATE CONFIG HEADER ---
 add_custom_command(
         OUTPUT ${GENERATED_KEYBOARD_HEADER}
-        COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/tools/generate_config.py
+        COMMAND ${PYTHON_EXEC} ${CMAKE_CURRENT_SOURCE_DIR}/tools/generate_config.py
         ${KEYBOARD_DIR}/keyboard.json
         ${GENERATED_KEYBOARD_HEADER}
         DEPENDS ${KEYBOARD_DIR}/keyboard.json
         ${CMAKE_CURRENT_SOURCE_DIR}/tools/generate_config.py
-        COMMENT "Generating config header from ${kb}/keyboard.json..."
+        COMMENT "Generating config header..."
 )
 
-# --- 4. ADD EXTERNAL LIBRARIES ---
-# Add pico-ssd1306 library for OLED support
+# --- 5. ADD EXTERNAL LIBRARIES ---
 add_subdirectory(lib/pico-ssd1306)
 
-# --- 5. BUILD EXECUTABLE ---
-add_executable(woyta_pad
+# --- 6. DEFINE SOURCES ---
+set(SOURCE_FILES
         core/main.c
         core/usb_descriptors.c
         core/matrix.c
-        ${KEYBOARD_DIR}/keymap.c
-        ${GENERATED_KEYBOARD_HEADER}
         core/encoder.c
-        core/encoder.h
+        ${GENERATED_KEYBOARD_HEADER}
+        ${KEYBOARD_DIR}/keymap.c
 )
 
-# --- 6. INCLUDE DIRECTORIES ---
+# --- 7. BUILD EXECUTABLE ---
+add_executable(woyta_pad ${SOURCE_FILES})
+
+# --- 8. INCLUDE DIRECTORIES ---
 target_include_directories(woyta_pad PRIVATE
         core
         ${KEYBOARD_DIR}
         ${GENERATED_HEADERS_DIRECTORY}
 )
 
-# --- 7. LIBRARIES ---
+# --- 9. LINK LIBRARIES ---
 target_link_libraries(woyta_pad
         pico_stdlib
         tinyusb_device
@@ -66,9 +75,7 @@ target_link_libraries(woyta_pad
         pico_ssd1306
 )
 
-# --- 8. USB CONFIG ---
+# --- 10. OUTPUTS ---
 pico_enable_stdio_usb(woyta_pad 0)
 pico_enable_stdio_uart(woyta_pad 1)
-
-# --- 9. OUTPUT ---
 pico_add_extra_outputs(woyta_pad)
