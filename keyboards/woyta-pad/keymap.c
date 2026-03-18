@@ -37,3 +37,29 @@ const uint8_t keymap[LAYERS][MATRIX_ROWS][MATRIX_COLS] = {
     },
 
 };
+
+
+// ENCODER MAP
+// Structure: [Layer][Encoder Index][CW, CCW, SW}]
+const uint8_t encoder_map[LAYERS][ENCODER_COUNT][3] = {
+
+    [0] = {
+        { KC_MEDIA_VOLUMEUP, KC_MEDIA_VOLUMEDOWN, KC_MEDIA_MUTE },
+        { KC_PAGEUP, KC_PAGEDOWN, KC_HOME }
+    },
+
+    [1] = {
+        { KC_RIGHT, KC_LEFT, KC_MEDIA_MUTE },
+        { KC_UP,    KC_DOWN, KC_TRNS }
+    },
+
+    [2] = {
+        { KC_TRNS, KC_TRNS, KC_TRNS },
+        { KC_TRNS, KC_TRNS, KC_TRNS }
+    },
+
+    [3] = {
+        { KC_TRNS, KC_TRNS, KC_TRNS },
+        { KC_TRNS, KC_TRNS, KC_TRNS }
+    }
+};

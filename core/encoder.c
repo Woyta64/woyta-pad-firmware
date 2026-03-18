@@ -5,6 +5,7 @@
 
 static const uint8_t pad_a[] = ENCODER_PAD_A_PINS;
 static const uint8_t pad_b[] = ENCODER_PAD_B_PINS;
+static const uint8_t click_pins[] = ENCODER_CLICK_PINS;
 
 static uint8_t state[ENCODER_COUNT];
 static int32_t position[ENCODER_COUNT]; // Stores net movement (+1, -1)
@@ -12,13 +13,20 @@ static int32_t position[ENCODER_COUNT]; // Stores net movement (+1, -1)
 
 void encoder_init(void) {
     for (int i = 0; i < ENCODER_COUNT; i++) {
+        // Initialize Pad A
         gpio_init(pad_a[i]);
         gpio_set_dir(pad_a[i], GPIO_IN);
         gpio_pull_up(pad_a[i]);
 
+        // Initialize Pad B
         gpio_init(pad_b[i]);
         gpio_set_dir(pad_b[i], GPIO_IN);
         gpio_pull_up(pad_b[i]);
+
+        // Initialize Click Pins
+        gpio_init(click_pins[i]);
+        gpio_set_dir(click_pins[i], GPIO_IN);
+        gpio_pull_up(click_pins[i]);
 
         // Initial state
         uint8_t a = gpio_get(pad_a[i]);
@@ -67,6 +75,14 @@ int32_t encoder_get_delta(uint8_t index) {
         return (val > 0) ? 1 : -1;
     }
     return 0;
+}
+
+bool encoder_get_click(uint8_t index) {
+    if (index >= ENCODER_COUNT) return false;
+
+    // Encoder buttons connect to ground when pressed (Active Low)
+    // So if gpio_get reads 0, the button is pressed (!0 = true)
+    return !gpio_get(click_pins[index]);
 }
 
 #endif

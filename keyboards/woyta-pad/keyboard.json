@@ -37,13 +37,13 @@
       {
         "pad_a": 14,
         "pad_b": 15,
-        "click_pin": 28,
+        "click_pin": 29,
         "resolution": 4
       },
       {
         "pad_a": 26,
         "pad_b": 27,
-        "click_pin": 29,
+        "click_pin": 28,
         "resolution": 4
       }
     ]

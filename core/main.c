@@ -10,21 +10,22 @@
 
 #define MAX_LAYERS 4
 
-// Import keymap from keymap.c
+// Import maps from keymap.c
 extern uint8_t keymap[MAX_LAYERS][MATRIX_ROWS][MATRIX_COLS];
+extern uint8_t encoder_map[MAX_LAYERS][ENCODER_COUNT][3];
 
 // --- CALLBACKS (Required for linking) ---
 uint16_t tud_hid_get_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_t report_type, uint8_t* buffer, uint16_t reqlen) { return 0; }
 void tud_hid_set_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_t report_type, uint8_t const* buffer, uint16_t bufsize) {}
 
-bool timer_callback(struct repeating_timer *t) {
+// --- HARDWARE AND MATRIX LOGIC ---
+
+bool encoder_timer_callback(struct repeating_timer *t) {
 #if ENCODER_COUNT > 0
     encoder_read();
 #endif
     return true;
 }
-
-// --- HARDWARE AND MATRIX LOGIC ---
 
 void process_layer_cycle(uint8_t *current_layer, bool *layer_key_was_pressed, bool *any_key_pressed) {
     bool layer_key_is_pressed = false;
@@ -76,6 +77,44 @@ void process_matrix_keys(uint8_t current_layer, uint8_t *keycode, uint8_t *modif
     }
 }
 
+void process_encoders(uint8_t current_layer, uint8_t *keycode, uint8_t *modifier, int *count, bool *any_key_pressed) {
+#if ENCODER_COUNT > 0
+    for (int i = 0; i < ENCODER_COUNT; i++) {
+        int32_t delta = encoder_get_delta(i);
+        if (delta != 0) {
+            *any_key_pressed = true;
+            if (*count < 6) {
+                uint8_t enc_code = (delta > 0) ? encoder_map[current_layer][i][0] : encoder_map[current_layer][i][1];
+                if (enc_code == KC_TRNS) {
+                    enc_code = (delta > 0) ? encoder_map[0][i][0] : encoder_map[0][i][1];
+                }
+                if (enc_code != 0) {
+                    keycode[*count] = enc_code;
+                    (*count)++;
+                }
+            }
+        }
+
+        if (encoder_get_click(i)) {
+            *any_key_pressed = true;
+            uint8_t click_code = encoder_map[current_layer][i][2];
+            if (click_code == KC_TRNS) {
+                click_code = encoder_map[0][i][2];
+            }
+            if (click_code == KC_LAY_NEXT) continue;
+
+            if (click_code >= 0xE0 && click_code <= 0xE7) {
+                *modifier |= (1 << (click_code - 0xE0));
+            }
+            else if (click_code != 0 && *count < 6) {
+                keycode[*count] = click_code;
+                (*count)++;
+            }
+        }
+    }
+#endif
+}
+
 // --- MAIN LOOP ---
 
 int main()
@@ -87,7 +126,7 @@ int main()
 #if ENCODER_COUNT > 0
     encoder_init();
     struct repeating_timer timer;
-    add_repeating_timer_us(-1000, timer_callback, NULL, &timer);
+    add_repeating_timer_ms(-1, encoder_timer_callback, NULL, &timer);
 #endif
 
     uint8_t current_layer = 0;
@@ -109,16 +148,7 @@ int main()
 
             process_layer_cycle(&current_layer, &layer_key_was_pressed, &any_key_pressed);
             process_matrix_keys(current_layer, keycode, &modifier, &count);
-
-#if ENCODER_COUNT > 0
-            for (int i = 0; i < ENCODER_COUNT; i++) {
-                int32_t delta = encoder_get_delta(i);
-                if (i == 0 && delta != 0) {
-                    any_key_pressed = true;
-                    if (count < 6) keycode[count++] = (delta > 0) ? KC_EQUAL : KC_MINUS;
-                }
-            }
-#endif
+            process_encoders(current_layer, keycode, &modifier, &count, &any_key_pressed);
 
             bool current_report_has_keys = (count > 0 || modifier > 0);
 
