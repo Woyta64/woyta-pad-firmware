@@ -17,7 +17,7 @@ jobs:
       - name: Initialize submodules
         run: |
           git submodule update --init lib/pico-sdk lib/pico-ssd1306
-          git submodule update --init lib/pico-sdk/lib/tinyusb
+          git -C lib/pico-sdk submodule update --init lib/tinyusb
 
       - name: Install ARM toolchain and build tools
         run: |
