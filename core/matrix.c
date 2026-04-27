@@ -12,6 +12,8 @@ static bool matrix_state[MATRIX_ROWS][MATRIX_COLS];
 
 // --- INITIALIZATION ---
 void matrix_init(void) {
+#ifdef DIODE_DIRECTION_COL2ROW
+    // COL2ROW: drive columns, read rows
     for (int i = 0; i < MATRIX_ROWS; i++) {
         gpio_init(row_pins[i]);
         gpio_set_dir(row_pins[i], GPIO_IN);
@@ -22,29 +24,53 @@ void matrix_init(void) {
         gpio_set_dir(col_pins[i], GPIO_IN);
         gpio_disable_pulls(col_pins[i]);
     }
+#else
+    // ROW2COL: drive rows, read columns
+    for (int i = 0; i < MATRIX_COLS; i++) {
+        gpio_init(col_pins[i]);
+        gpio_set_dir(col_pins[i], GPIO_IN);
+        gpio_pull_down(col_pins[i]);
+    }
+    for (int i = 0; i < MATRIX_ROWS; i++) {
+        gpio_init(row_pins[i]);
+        gpio_set_dir(row_pins[i], GPIO_IN);
+        gpio_disable_pulls(row_pins[i]);
+    }
+#endif
 }
 
 void matrix_scan(void) {
+#ifdef DIODE_DIRECTION_COL2ROW
+    // COL2ROW: drive each column, read rows
     for (int c = 0; c < MATRIX_COLS; c++) {
-        // 1. Column HIGH (3.3V)
         gpio_set_dir(col_pins[c], GPIO_OUT);
         gpio_put(col_pins[c], 1);
         sleep_us(30);
 
-        // 2. Read Rows
         for (int r = 0; r < MATRIX_ROWS; r++) {
-            if (gpio_get(row_pins[r])) {
-                matrix_state[r][c] = true;
-            } else {
-                matrix_state[r][c] = false;
-            }
+            matrix_state[r][c] = gpio_get(row_pins[r]);
         }
 
-        // 3. Turn Column OFF
         gpio_put(col_pins[c], 0);
         gpio_set_dir(col_pins[c], GPIO_IN);
         sleep_us(30);
     }
+#else
+    // ROW2COL: drive each row, read columns
+    for (int r = 0; r < MATRIX_ROWS; r++) {
+        gpio_set_dir(row_pins[r], GPIO_OUT);
+        gpio_put(row_pins[r], 1);
+        sleep_us(30);
+
+        for (int c = 0; c < MATRIX_COLS; c++) {
+            matrix_state[r][c] = gpio_get(col_pins[c]);
+        }
+
+        gpio_put(row_pins[r], 0);
+        gpio_set_dir(row_pins[r], GPIO_IN);
+        sleep_us(30);
+    }
+#endif
 }
 
 bool matrix_is_on(uint8_t row, uint8_t col) {

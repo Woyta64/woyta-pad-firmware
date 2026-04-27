@@ -1,0 +1,40 @@
+{
+  "meta": {
+    "name": "Example 3x3",
+    "version": "1.0.0",
+    "maintainer": "You"
+  },
+  "matrix": {
+    "rows": 3,
+    "cols": 3,
+    "row_pins": [5, 6, 7],
+    "col_pins": [8, 9, 10],
+    "diode_direction": "COL2ROW"
+  },
+  "physical_layout": [
+    { "x": 0, "y": 0, "type": "encoder", "index": 0 },
+    { "x": 0, "y": 1, "type": "key", "matrix": [0, 0] },
+    { "x": 1, "y": 1, "type": "key", "matrix": [0, 1] },
+    { "x": 2, "y": 1, "type": "key", "matrix": [0, 2] },
+    { "x": 0, "y": 2, "type": "key", "matrix": [1, 0] },
+    { "x": 1, "y": 2, "type": "key", "matrix": [1, 1] },
+    { "x": 2, "y": 2, "type": "key", "matrix": [1, 2] },
+    { "x": 0, "y": 3, "type": "key", "matrix": [2, 0] },
+    { "x": 1, "y": 3, "type": "key", "matrix": [2, 1] },
+    { "x": 2, "y": 3, "type": "key", "matrix": [2, 2] }
+  ],
+  "encoders": {
+    "enabled": true,
+    "pins": [
+      { "pad_a": 14, "pad_b": 15, "click_pin": 16, "resolution": 4 }
+    ]
+  },
+  "oled": {
+    "enabled": true,
+    "width": 128,
+    "height": 32,
+    "oled_sda": 0,
+    "oled_scl": 1,
+    "flip": false
+  }
+}

@@ -2,7 +2,6 @@ import json
 import sys
 import os
 import re
-from gc import enable
 
 
 def remove_comments(json_str):
@@ -42,6 +41,10 @@ def generate_header(json_path, header_path):
     vid = usb.get("vid", "0xCAFE")
     pid = usb.get("pid", "0x4242")
     bcd_device = usb.get("device_ver", "0x0100")
+
+    # Sanitize strings for C (escape quotes/backslashes)
+    manufacturer = manufacturer.replace('\\', '\\\\').replace('"', '\\"')
+    product = product.replace('\\', '\\\\').replace('"', '\\"')
 
     oled = data.get("oled", {})
     enable_oled = oled.get("enabled", False)
@@ -86,8 +89,14 @@ def generate_header(json_path, header_path):
         content.append(f"#define ENCODER_RESOLUTIONS {{ {', '.join(map(str, resolutions))} }}")
     else:
         content.append("#define ENABLE_ENCODER false")
+        content.append("#define ENCODER_COUNT 0")
 
-    if enable_oled and oled_sda and oled_scl:
+    # MAX_LAYERS — centralized, used by core code
+    max_layers = data.get("layers", 4)
+    content.append("")
+    content.append(f"#define MAX_LAYERS {max_layers}")
+
+    if enable_oled and oled_sda is not None and oled_scl is not None:
         oled_width = oled.get("width", 128)
         oled_height = oled.get("height", 32)
 
@@ -97,6 +106,8 @@ def generate_header(json_path, header_path):
         content.append(f"#define OLED_SCL_PIN {oled_scl}")
         content.append(f"#define OLED_WIDTH {oled_width}")
         content.append(f"#define OLED_HEIGHT {oled_height}")
+        oled_flip = oled.get("flip", False)
+        content.append(f"#define OLED_FLIP {'true' if oled_flip else 'false'}")
     else:
         content.append("")
         content.append("#define ENABLE_OLED false")

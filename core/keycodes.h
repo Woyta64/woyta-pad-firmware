@@ -2,7 +2,7 @@
 
 // --- CUSTOM WOYTA-PAD KEYCODES ---
 #define KC_TRNS 0x00      // Transparent: Fall back to the key on Layer 0
-#define KC_LAY_NEXT 0xF4  // Cycle to next layer
+#define KC_LAY_NEXT 0x00FC  // Cycle to next layer (uint16_t range, above HID scancodes)
 
 /**
  * Modifier masks - used for the first byte in the HID report.
@@ -275,3 +275,139 @@
 #define KC_MEDIA_COFFEE 0xf9
 #define KC_MEDIA_REFRESH 0xfa
 #define KC_MEDIA_CALC 0xfb
+
+// --- MACRO KEYCODES (uint16_t range, 0x0100–0x017F) ---
+#define KC_MACRO_0   0x0100
+#define KC_MACRO_1   0x0101
+#define KC_MACRO_2   0x0102
+#define KC_MACRO_3   0x0103
+#define KC_MACRO_4   0x0104
+#define KC_MACRO_5   0x0105
+#define KC_MACRO_6   0x0106
+#define KC_MACRO_7   0x0107
+#define KC_MACRO_8   0x0108
+#define KC_MACRO_9   0x0109
+#define KC_MACRO_10  0x010A
+#define KC_MACRO_11  0x010B
+#define KC_MACRO_12  0x010C
+#define KC_MACRO_13  0x010D
+#define KC_MACRO_14  0x010E
+#define KC_MACRO_15  0x010F
+#define KC_MACRO_16  0x0110
+#define KC_MACRO_17  0x0111
+#define KC_MACRO_18  0x0112
+#define KC_MACRO_19  0x0113
+#define KC_MACRO_20  0x0114
+#define KC_MACRO_21  0x0115
+#define KC_MACRO_22  0x0116
+#define KC_MACRO_23  0x0117
+#define KC_MACRO_24  0x0118
+#define KC_MACRO_25  0x0119
+#define KC_MACRO_26  0x011A
+#define KC_MACRO_27  0x011B
+#define KC_MACRO_28  0x011C
+#define KC_MACRO_29  0x011D
+#define KC_MACRO_30  0x011E
+#define KC_MACRO_31  0x011F
+#define KC_MACRO_32  0x0120
+#define KC_MACRO_33  0x0121
+#define KC_MACRO_34  0x0122
+#define KC_MACRO_35  0x0123
+#define KC_MACRO_36  0x0124
+#define KC_MACRO_37  0x0125
+#define KC_MACRO_38  0x0126
+#define KC_MACRO_39  0x0127
+#define KC_MACRO_40  0x0128
+#define KC_MACRO_41  0x0129
+#define KC_MACRO_42  0x012A
+#define KC_MACRO_43  0x012B
+#define KC_MACRO_44  0x012C
+#define KC_MACRO_45  0x012D
+#define KC_MACRO_46  0x012E
+#define KC_MACRO_47  0x012F
+#define KC_MACRO_48  0x0130
+#define KC_MACRO_49  0x0131
+#define KC_MACRO_50  0x0132
+#define KC_MACRO_51  0x0133
+#define KC_MACRO_52  0x0134
+#define KC_MACRO_53  0x0135
+#define KC_MACRO_54  0x0136
+#define KC_MACRO_55  0x0137
+#define KC_MACRO_56  0x0138
+#define KC_MACRO_57  0x0139
+#define KC_MACRO_58  0x013A
+#define KC_MACRO_59  0x013B
+#define KC_MACRO_60  0x013C
+#define KC_MACRO_61  0x013D
+#define KC_MACRO_62  0x013E
+#define KC_MACRO_63  0x013F
+#define KC_MACRO_64  0x0140
+#define KC_MACRO_65  0x0141
+#define KC_MACRO_66  0x0142
+#define KC_MACRO_67  0x0143
+#define KC_MACRO_68  0x0144
+#define KC_MACRO_69  0x0145
+#define KC_MACRO_70  0x0146
+#define KC_MACRO_71  0x0147
+#define KC_MACRO_72  0x0148
+#define KC_MACRO_73  0x0149
+#define KC_MACRO_74  0x014A
+#define KC_MACRO_75  0x014B
+#define KC_MACRO_76  0x014C
+#define KC_MACRO_77  0x014D
+#define KC_MACRO_78  0x014E
+#define KC_MACRO_79  0x014F
+#define KC_MACRO_80  0x0150
+#define KC_MACRO_81  0x0151
+#define KC_MACRO_82  0x0152
+#define KC_MACRO_83  0x0153
+#define KC_MACRO_84  0x0154
+#define KC_MACRO_85  0x0155
+#define KC_MACRO_86  0x0156
+#define KC_MACRO_87  0x0157
+#define KC_MACRO_88  0x0158
+#define KC_MACRO_89  0x0159
+#define KC_MACRO_90  0x015A
+#define KC_MACRO_91  0x015B
+#define KC_MACRO_92  0x015C
+#define KC_MACRO_93  0x015D
+#define KC_MACRO_94  0x015E
+#define KC_MACRO_95  0x015F
+#define KC_MACRO_96  0x0160
+#define KC_MACRO_97  0x0161
+#define KC_MACRO_98  0x0162
+#define KC_MACRO_99  0x0163
+#define KC_MACRO_100 0x0164
+#define KC_MACRO_101 0x0165
+#define KC_MACRO_102 0x0166
+#define KC_MACRO_103 0x0167
+#define KC_MACRO_104 0x0168
+#define KC_MACRO_105 0x0169
+#define KC_MACRO_106 0x016A
+#define KC_MACRO_107 0x016B
+#define KC_MACRO_108 0x016C
+#define KC_MACRO_109 0x016D
+#define KC_MACRO_110 0x016E
+#define KC_MACRO_111 0x016F
+#define KC_MACRO_112 0x0170
+#define KC_MACRO_113 0x0171
+#define KC_MACRO_114 0x0172
+#define KC_MACRO_115 0x0173
+#define KC_MACRO_116 0x0174
+#define KC_MACRO_117 0x0175
+#define KC_MACRO_118 0x0176
+#define KC_MACRO_119 0x0177
+#define KC_MACRO_120 0x0178
+#define KC_MACRO_121 0x0179
+#define KC_MACRO_122 0x017A
+#define KC_MACRO_123 0x017B
+#define KC_MACRO_124 0x017C
+#define KC_MACRO_125 0x017D
+#define KC_MACRO_126 0x017E
+#define KC_MACRO_127 0x017F
+
+// Macro keycode helpers
+#define KC_MACRO_BASE  0x0100
+#define KC_MACRO_MAX   0x017F
+#define IS_MACRO_KEYCODE(kc)    ((kc) >= KC_MACRO_BASE && (kc) <= KC_MACRO_MAX)
+#define MACRO_SLOT_FROM_KC(kc)  ((kc) - KC_MACRO_BASE)
