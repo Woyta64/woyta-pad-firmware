@@ -57,6 +57,7 @@ def generate_header(assets_dir, output_file):
 
         # Write C Array
         content.append(f"// Source: {filename} ({w}x{h})")
+        content.append(f"#define HAS_BITMAP_{safe_name.upper()} 1")
         # Note: We don't use 'static' here so assets.h can see it
         content.append(f"const uint8_t {var_name}[] = {{")
 

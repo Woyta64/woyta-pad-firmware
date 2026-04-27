@@ -2,14 +2,12 @@
 #include "keycodes.h"
 #include "generated_config.h"
 
-#define LAYERS 4
-
 // MATRIX KEYMAP
 // Structure: [Layer][Row][Column]
-const uint8_t keymap[LAYERS][MATRIX_ROWS][MATRIX_COLS] = {
+uint16_t keymap[MAX_LAYERS][MATRIX_ROWS][MATRIX_COLS] = {
 
     [0] = {
-        { KC_0,  KC_1, KC_2, KC_3, KC_LAY_NEXT },
+        { KC_MACRO_0,  KC_1, KC_2, KC_3, KC_LAY_NEXT },
         { KC_5,  KC_6, KC_7, KC_8, KC_9 },
         { KC_A,  KC_Z, KC_X, KC_C, KC_V },
         { KC_B,  KC_C, KC_SPACE, KC_ENTER, KC_BACKSPACE }
@@ -41,7 +39,7 @@ const uint8_t keymap[LAYERS][MATRIX_ROWS][MATRIX_COLS] = {
 
 // ENCODER MAP
 // Structure: [Layer][Encoder Index][CW, CCW, SW}]
-const uint8_t encoder_map[LAYERS][ENCODER_COUNT][3] = {
+uint16_t encoder_map[MAX_LAYERS][ENCODER_COUNT][3] = {
 
     [0] = {
         { KC_MEDIA_VOLUMEUP, KC_MEDIA_VOLUMEDOWN, KC_MEDIA_MUTE },

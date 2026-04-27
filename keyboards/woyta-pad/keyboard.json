@@ -2,16 +2,14 @@
   "meta": {
     "name": "Woyta Pad",
     "version": "1.0.0",
-    "maintainer": "Woyta",
-    "mcu": "rp2040"
+    "maintainer": "Woyta"
   },
   "usb": {
     "vid": "0xCAFE",
     "pid": "0x4243",
     "device_ver": "0x0001",
     "manufacturer": "Woyta",
-    "product": "Woyta Pad",
-    "polling_interval": 1
+    "product": "Woyta Pad"
   },
   "matrix": {
     "rows": 4,
@@ -247,6 +245,7 @@
     "width": 128,
     "height": 32,
     "oled_sda": 0,
-    "oled_scl": 1
+    "oled_scl": 1,
+    "flip": true
   }
 }

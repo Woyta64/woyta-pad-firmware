@@ -70,6 +70,8 @@ set(SOURCE_FILES
         core/usb_descriptors.c
         core/matrix.c
         core/encoder.c
+        core/macro.c
+        core/keymap_store.c
         ${GENERATED_KEYBOARD_HEADER}
         ${KEYBOARD_DIR}/keymap.c
 )
@@ -103,14 +105,19 @@ if(IS_OLED_ON)
             core/oled.cpp
             ${GENERATED_ASSETS_HEADER}
             ${KEYBOARD_DIR}/assets.h
-            lib/pico-ssd1306/ssd1306.cpp  # <--- Driver Source added here
+            lib/pico-ssd1306/ssd1306.cpp
+            lib/pico-ssd1306/frameBuffer/FrameBuffer.cpp
+            lib/pico-ssd1306/textRenderer/TextRenderer.cpp
     )
 endif()
 
 # --- 9. BUILD EXECUTABLE ---
 add_executable(woyta_pad ${SOURCE_FILES})
 
-# --- 10. INCLUDE DIRECTORIES ---
+# --- 10. COMPILE DEFINITIONS ---
+target_compile_definitions(woyta_pad PRIVATE KEYBOARD_ID="${kb}")
+
+# --- 11. INCLUDE DIRECTORIES ---
 target_include_directories(woyta_pad PRIVATE
         core
         ${KEYBOARD_DIR}
@@ -118,11 +125,12 @@ target_include_directories(woyta_pad PRIVATE
         lib/pico-ssd1306 # <--- So we can find ssd1306.h and font.h
 )
 
-# --- 11. LINK LIBRARIES ---
+# --- 12. LINK LIBRARIES ---
 set(LIBS
         pico_stdlib
         tinyusb_device
         tinyusb_board
+        hardware_flash
 )
 
 if(IS_OLED_ON)
@@ -134,7 +142,7 @@ endif()
 
 target_link_libraries(woyta_pad ${LIBS})
 
-# --- 12. OUTPUTS ---
+# --- 13. OUTPUTS ---
 pico_enable_stdio_usb(woyta_pad 0)
 pico_enable_stdio_uart(woyta_pad 1)
 pico_add_extra_outputs(woyta_pad)

@@ -14,14 +14,5 @@ typedef enum {
     OLED_STATE_ACTIVE,
     OLED_STATE_IDLE,
     OLED_STATE_SLEEP,
-    BUTTON_CLICK,
-    LAYER_1,
-    LAYER_2,
-    LAYER_3,
-    LAYER_4,
-    LAYER_5,
-    LAYER_6,
-    LAYER_7,
-    LAYER_8,
-    OLED_STATE_COUNT // Used to size array of states
+    OLED_STATE_COUNT
 } oled_state_t;
