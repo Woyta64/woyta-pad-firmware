@@ -56,6 +56,14 @@ source venv/bin/activate
 pip install Pillow
 ```
 
+Fish shell:
+
+```fish
+python3 -m venv venv
+source venv/bin/activate.fish
+pip install Pillow
+```
+
 The build system auto-detects `venv/bin/python3` if present, otherwise falls back to system `python3`.
 
 ### Build
@@ -65,6 +73,15 @@ export PICO_SDK_PATH=$(pwd)/lib/pico-sdk
 mkdir -p build && cd build
 cmake -Dkb=woyta-pad ..
 make -j$(nproc)
+```
+
+Fish shell:
+
+```fish
+set -x PICO_SDK_PATH (pwd)/lib/pico-sdk
+mkdir -p build; and cd build
+cmake -Dkb=woyta-pad ..
+make -j(nproc)
 ```
 
 Replace `woyta-pad` with your keyboard folder name. If `-Dkb` is omitted, it defaults to `woyta-pad`.
