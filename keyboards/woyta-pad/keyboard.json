@@ -5,8 +5,8 @@
     "maintainer": "Woyta"
   },
   "usb": {
-    "vid": "0xCAFE",
-    "pid": "0x4243",
+    "vid": "0x1209",
+    "pid": "0x5750",
     "device_ver": "0x0001",
     "manufacturer": "Woyta",
     "product": "Woyta Pad"
