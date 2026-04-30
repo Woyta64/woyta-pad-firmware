@@ -38,8 +38,8 @@ def generate_header(json_path, header_path):
     manufacturer = usb.get("manufacturer", meta.get("manufacturer", "Woyta Factory"))
     product = usb.get("product", meta.get("name", "Woyta Pad"))
 
-    vid = usb.get("vid", "0xCAFE")
-    pid = usb.get("pid", "0x4242")
+    vid = usb.get("vid", "0x1209")
+    pid = usb.get("pid", "0x5750")
     bcd_device = usb.get("device_ver", "0x0100")
 
     # Sanitize strings for C (escape quotes/backslashes)
